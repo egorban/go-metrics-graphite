@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rcrowley/go-metrics"
+	"github.com/ashirko/go-metrics"
 )
 
 // Config provides a container with configuration parameters for
