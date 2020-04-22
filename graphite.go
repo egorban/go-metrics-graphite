@@ -64,6 +64,7 @@ func graphite(c *Config) error {
 	}
 	defer conn.Close()
 	w := bufio.NewWriter(conn)
+	log.Println("DEBUG send metrics to",c.Addr)
 	c.Registry.Each(func(name string, i interface{}) {
 		switch metric := i.(type) {
 		case metrics.Counter:
