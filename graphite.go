@@ -74,7 +74,7 @@ func graphite(c *Config) error {
 	}
 	defer conn.Close()
 	w := bufio.NewWriter(conn)
-	log.Println("DEBUG send metrics to",c.Network, c.Address)
+	log.Println("DEBUG send metrics to", c.Network, c.Address)
 	c.Registry.Each(func(name string, i interface{}) {
 		switch metric := i.(type) {
 		case metrics.Counter:
@@ -131,9 +131,6 @@ func graphite(c *Config) error {
 }
 
 func defineNetwork(c *Config) (err error) {
-	if c.Network != "" && c.Address != "" {
-		return nil
-	}
 	switch addr := c.Addr.(type) {
 	case *net.UDPAddr:
 		c.Network = "udp"
