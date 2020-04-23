@@ -72,13 +72,14 @@ func graphite(c *Config) error {
             log.Println("unknow network")
             return errors.New("unknow network")
     }
+    log.Println("graphite network",network)
 	conn, err := net.Dial(network, address)
 	if nil != err {
 		return err
 	}
 	defer conn.Close()
 	w := bufio.NewWriter(conn)
-	log.Println("DEBUG send metrics to",c.Addr)
+	log.Println("DEBUG send metrics to",address)
 	c.Registry.Each(func(name string, i interface{}) {
 		switch metric := i.(type) {
 		case metrics.Counter:
