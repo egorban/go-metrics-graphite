@@ -15,7 +15,9 @@ import (
 // Config provides a container with configuration parameters for
 // the Graphite exporter
 type Config struct {
-	Addr          interface{}     // Network address to connect to
+	Addr          interface{}      // Network address to connect to
+	Network       string           // Name network to connect to
+	Address       string           // Network address to connect to
 	Registry      metrics.Registry // Registry to be exported
 	FlushInterval time.Duration    // Flush interval
 	DurationUnit  time.Duration    // Time conversion unit for durations
@@ -40,6 +42,10 @@ func Graphite(r metrics.Registry, d time.Duration, prefix string, addr interface
 // WithConfig is a blocking exporter function just like Graphite,
 // but it takes a GraphiteConfig instead.
 func WithConfig(c Config) {
+	if err := defineNetwork(&c); nil != err {
+		log.Println(err)
+		return
+	}
 	for _ = range time.Tick(c.FlushInterval) {
 		if err := graphite(&c); nil != err {
 			log.Println(err)
@@ -51,6 +57,10 @@ func WithConfig(c Config) {
 // non-nil error on failed connections. This can be used in a loop
 // similar to GraphiteWithConfig for custom error handling.
 func Once(c Config) error {
+	if err := defineNetwork(&c); nil != err {
+		log.Println(err)
+		return err
+	}
 	return graphite(&c)
 }
 
@@ -58,27 +68,13 @@ func graphite(c *Config) error {
 	now := time.Now().Unix()
 	du := float64(c.DurationUnit)
 	flushSeconds := float64(c.FlushInterval) / float64(time.Second)
-    var network string
-    var address string
-	switch a := c.Addr.(type) {
-	    case *net.UDPAddr:
-	        network = "udp"
-	        address = a.String()
-	     case *net.TCPAddr:
-         	network = "tcp"
-            address = a.String()
-         default:
-            log.Println("unknow network")
-            return errors.New("unknow network")
-    }
-    log.Println("graphite network")
-	conn, err := net.Dial(network, address)
+	conn, err := net.Dial(c.Network, c.Address)
 	if nil != err {
 		return err
 	}
 	defer conn.Close()
 	w := bufio.NewWriter(conn)
-	log.Println("DEBUG send metrics to",address)
+	log.Println("DEBUG send metrics to",c.Network, c.Address)
 	c.Registry.Each(func(name string, i interface{}) {
 		switch metric := i.(type) {
 		case metrics.Counter:
@@ -132,4 +128,21 @@ func graphite(c *Config) error {
 		w.Flush()
 	})
 	return nil
+}
+
+func defineNetwork(c *Config) (err error) {
+	if c.Network != "" && c.Address != "" {
+		return nil
+	}
+	switch addr := c.Addr.(type) {
+	case *net.UDPAddr:
+		c.Network = "udp"
+		c.Address = addr.String()
+	case *net.TCPAddr:
+		c.Network = "tcp"
+		c.Address = addr.String()
+	default:
+		err = errors.New("Unknow network")
+	}
+	return err
 }
