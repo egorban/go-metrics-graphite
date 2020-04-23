@@ -46,8 +46,13 @@ func WithConfig(c Config) {
 		log.Println(err)
 		return
 	}
+	conn, err := net.Dial(c.Network, c.Address)
+	if nil != err {
+		return
+	}
+	defer conn.Close()
 	for _ = range time.Tick(c.FlushInterval) {
-		if err := graphite(&c); nil != err {
+		if err := graphite(&c, conn); nil != err {
 			log.Println(err)
 		}
 	}
@@ -61,18 +66,19 @@ func Once(c Config) error {
 		log.Println(err)
 		return err
 	}
-	return graphite(&c)
-}
-
-func graphite(c *Config) error {
-	now := time.Now().Unix()
-	du := float64(c.DurationUnit)
-	flushSeconds := float64(c.FlushInterval) / float64(time.Second)
 	conn, err := net.Dial(c.Network, c.Address)
 	if nil != err {
 		return err
 	}
 	defer conn.Close()
+	return graphite(&c, conn)
+}
+
+func graphite(c *Config, conn net.Conn) error {
+	now := time.Now().Unix()
+	du := float64(c.DurationUnit)
+	flushSeconds := float64(c.FlushInterval) / float64(time.Second)
+
 	w := bufio.NewWriter(conn)
 	log.Println("DEBUG send metrics to", c.Network, c.Address)
 	c.Registry.Each(func(name string, i interface{}) {
