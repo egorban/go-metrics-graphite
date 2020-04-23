@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"errors"
 
 	"github.com/ashirko/go-metrics"
 )
@@ -58,17 +59,20 @@ func graphite(c *Config) error {
 	now := time.Now().Unix()
 	du := float64(c.DurationUnit)
 	flushSeconds := float64(c.FlushInterval) / float64(time.Second)
-    network string
-	switch c.Addr.(type) {
+    var network string
+    var address string
+	switch a := c.Addr.(type) {
 	    case *net.UDPAddr:
 	        network = "udp"
+	        address = a.IP.String()+":"+strconv.Itoa(a.Port)
 	     case *net.TCPAddr:
          	network = "tcp"
+            address = a.IP.String()+":"+strconv.Itoa(a.Port)
          default:
             log.Println("unknow network")
             return errors.New("unknow network")
     }
-	conn, err := net.Dial(network, c.Addr)
+	conn, err := net.Dial(network, address)
 	if nil != err {
 		return err
 	}
