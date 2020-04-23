@@ -2,15 +2,13 @@ package graphite
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"strconv"
 	"strings"
 	"time"
-	"errors"
-
-	"github.com/ashirko/go-metrics"
 )
 
 // Config provides a container with configuration parameters for
@@ -64,22 +62,22 @@ func graphite(c *Config) error {
 	switch a := c.Addr.(type) {
 	    case *net.UDPAddr:
 	        network = "udp"
-	        address = a.IP.String()+":"+strconv.Itoa(a.Port)
+	        address = a.String()
 	     case *net.TCPAddr:
          	network = "tcp"
-            address = a.IP.String()+":"+strconv.Itoa(a.Port)
+            address = a.String()
          default:
             log.Println("unknow network")
             return errors.New("unknow network")
     }
-    log.Println("graphite network",network)
-	conn, err := net.Dial(network, address)
+    log.Println("graphite network")
+	conn, err := net.Dial(network, c.Addr.String())
 	if nil != err {
 		return err
 	}
 	defer conn.Close()
 	w := bufio.NewWriter(conn)
-	log.Println("DEBUG send metrics to",address)
+	log.Println("DEBUG send metrics to",c.Addr)
 	c.Registry.Each(func(name string, i interface{}) {
 		switch metric := i.(type) {
 		case metrics.Counter:
