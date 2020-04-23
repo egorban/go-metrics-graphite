@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/ashirko/go-metrics"
 	"log"
 	"net"
 	"strconv"
@@ -71,13 +72,13 @@ func graphite(c *Config) error {
             return errors.New("unknow network")
     }
     log.Println("graphite network")
-	conn, err := net.Dial(network, c.Addr.String())
+	conn, err := net.Dial(network, address)
 	if nil != err {
 		return err
 	}
 	defer conn.Close()
 	w := bufio.NewWriter(conn)
-	log.Println("DEBUG send metrics to",c.Addr)
+	log.Println("DEBUG send metrics to",address)
 	c.Registry.Each(func(name string, i interface{}) {
 		switch metric := i.(type) {
 		case metrics.Counter:
